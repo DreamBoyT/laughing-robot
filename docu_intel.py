@@ -81,10 +81,12 @@ if not is_authenticated():
         auth_url = st.session_state.auth_code_flow["auth_uri"]  
         st.write(f"Please authenticate by visiting [this link]({auth_url}).")  
 else:  
-    if st.button("Logout"):  
-        st.session_state.token = None  
-        st.write("You have been logged out.")  
-        st.experimental_rerun()  # This will refresh the page and clear the session state  
+    # Place the logout button in the sidebar  
+    with st.sidebar:  
+        if st.button("Logout"):  
+            st.session_state.token = None  
+            st.write("You have been logged out.")  
+            st.experimental_rerun()  # This will refresh the page and clear the session state  
   
 # Create a session state variable to store the chat messages. This ensures that the messages persist across reruns.  
 if "messages" not in st.session_state:  
@@ -194,3 +196,4 @@ if is_authenticated():
         st.session_state.messages.append({"role": "assistant", "content": response})  
 else:  
     st.write("Please login to interact with the chatbot.")  
+
