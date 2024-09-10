@@ -84,7 +84,6 @@ else:
     if st.button("Logout"):  
         st.session_state.token = None  
         st.write("You have been logged out.")  
-        st.experimental_rerun()  # This will refresh the page and clear the session state  
   
 # Create a session state variable to store the chat messages. This ensures that the messages persist across reruns.  
 if "messages" not in st.session_state:  
