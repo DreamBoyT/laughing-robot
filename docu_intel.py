@@ -2,7 +2,6 @@ import os
 import streamlit as st  
 from openai import AzureOpenAI  
 import fitz  # PyMuPDF  
-import msal  
   
 # Set up Azure OpenAI credentials for the general chatbot model  
 endpoint = "https://gpt-4omniwithimages.openai.azure.com/"  
@@ -30,167 +29,118 @@ summarizer_client = AzureOpenAI(
     api_version="2024-02-15-preview",  
 )  
   
-# MSAL configuration  
-CLIENT_ID = "2849f8da-cd31-4b5c-b605-ad3ad64162aa"  
-AUTHORITY = "https://login.microsoftonline.com/4d4343c6-067a-4794-91f3-5cb10073e5b4"  
-  
-def get_msal_app():  
-    return msal.PublicClientApplication(  
-        client_id=CLIENT_ID,  
-        authority=AUTHORITY,  
-    )  
-  
-def get_token_from_cache():  
-    # Check for a token in the cache  
-    accounts = msal_app.get_accounts()  
-    if accounts:  
-        result = msal_app.acquire_token_silent(["User.Read"], account=accounts[0])  
-        return result  
-    return None  
-  
-msal_app = get_msal_app()  
-  
+# Streamlit app interface  
 st.title("⛽ GAIL Limited Chatbot")  
+st.write(  
+    "An advanced enterprise chatbot tailored for GAIL, Ministry of Petroleum and Natural Gas, utilizing Azure AI services. This chatbot streamlines internal processes, enhances communication, and provides instant, accurate responses on HR policies, IT support, company events, and more. "  
+    "It is secure, scalable, and designed to boost productivity within the organization."   
+)  
   
-# Authentication  
-if "token" not in st.session_state:  
-    st.session_state.token = None  
+# Create a session state variable to store the chat messages. This ensures that the  
+# messages persist across reruns.  
+if "messages" not in st.session_state:  
+    st.session_state.messages = []  
   
-if st.session_state.token is None:  
-    token = get_token_from_cache()  
-    if token:  
-        st.session_state.token = token  
+# Display the existing chat messages via `st.chat_message`.  
+for message in st.session_state.messages:  
+    with st.chat_message(message["role"]):  
+        st.markdown(message["content"])  
+  
+# Function to handle document uploads and queries  
+def handle_document_query(document, query):  
+    # Determine the file type and read the content accordingly  
+    if document.type == "application/pdf":  
+        # Read PDF content  
+        pdf_document = fitz.open(stream=document.read(), filetype="pdf")  
+        document_content = ""  
+        for page_num in range(pdf_document.page_count):  
+            page = pdf_document.load_page(page_num)  
+            document_content += page.get_text()  
     else:  
-        if st.button("Login"):  
-            flow = msal_app.initiate_device_flow(scopes=["User.Read"])  
-            if "user_code" in flow:  
-                st.write(flow["message"])  
-                token = msal_app.acquire_token_by_device_flow(flow)  
-                if "access_token" in token:  
-                    st.session_state.token = token  
-                else:  
-                    st.error("Login failed. Please try again.")  
-            else:  
-                st.error("Failed to initiate device flow. Please try again.")  
+        # Try reading the document with different encodings  
+        try:  
+            document_content = document.read().decode("utf-8")  
+        except UnicodeDecodeError:  
+            try:  
+                document_content = document.read().decode("latin1")  
+            except UnicodeDecodeError:  
+                st.error("Unable to read the document. Unsupported encoding.")  
+                return "Error: Unsupported document encoding."  
   
-if st.session_state.token:  
-    st.write(  
-        "An advanced enterprise chatbot tailored for GAIL, Ministry of Petroleum and Natural Gas, utilizing Azure AI services. This chatbot streamlines internal processes, enhances communication, and provides instant, accurate responses on HR policies, IT support, company events, and more. "  
-        "It is secure, scalable, and designed to boost productivity within the organization."  
+    # Generate a response using the Summarizer and Q&A model  
+    completion = summarizer_client.chat.completions.create(  
+        model="GPT-4-Omni",  
+        messages=[  
+            {"role": "system", "content": "You are an AI assistant that helps summarize and answer questions based on the provided document."},  
+            {"role": "user", "content": f"Document content: {document_content}"},  
+            {"role": "user", "content": f"Question: {query}"}  
+        ],  
+        max_tokens=4096,  
+        temperature=0,  
+        top_p=1,  
+        frequency_penalty=0,  
+        presence_penalty=0,  
+        stop=None,  
+        stream=False  
     )  
   
-    # Create a session state variable to store the chat messages. This ensures that the  
-    # messages persist across reruns.  
-    if "messages" not in st.session_state:  
-        st.session_state.messages = []  
+    return completion.choices[0].message.content  
   
-    # Display the existing chat messages via `st.chat_message`.  
-    for message in st.session_state.messages:  
-        with st.chat_message(message["role"]):  
-            st.markdown(message["content"])  
+# Create a file uploader for document uploads  
+uploaded_file = st.file_uploader("Upload a document", type=["pdf", "txt"])  
   
-    # Function to handle document uploads and queries  
-    def handle_document_query(document, query):  
-        # Determine the file type and read the content accordingly  
-        if document.type == "application/pdf":  
-            # Read PDF content  
-            pdf_document = fitz.open(stream=document.read(), filetype="pdf")  
-            document_content = ""  
-            for page_num in range(pdf_document.page_count):  
-                page = pdf_document.load_page(page_num)  
-                document_content += page.get_text()  
-        else:  
-            # Try reading the document with different encodings  
-            try:  
-                document_content = document.read().decode("utf-8")  
-            except UnicodeDecodeError:  
-                try:  
-                    document_content = document.read().decode("latin1")  
-                except UnicodeDecodeError:  
-                    st.error("Unable to read the document. Unsupported encoding.")  
-                    return "Error: Unsupported document encoding."  
+# Create a chat input field to allow the user to enter a message. This will display  
+# automatically at the bottom of the page.  
+if prompt := st.chat_input("What is up?"):  
+    # Store and display the current prompt.  
+    st.session_state.messages.append({"role": "user", "content": prompt})  
+    with st.chat_message("user"):  
+        st.markdown(prompt)  
   
-        # Generate a response using the Summarizer and Q&A model  
-        completion = summarizer_client.chat.completions.create(  
-            model="GPT-4-Omni",  
+    if uploaded_file:  
+        # Handle document-based query  
+        response = handle_document_query(uploaded_file, prompt)  
+    else:  
+        # Generate a response using the general chatbot model  
+        completion = client.chat.completions.create(  
+            model=deployment,  
             messages=[  
-                {"role": "system", "content": "You are an AI assistant that helps summarize and answer questions based on the provided document."},  
-                {"role": "user", "content": f"Document content: {document_content}"},  
-                {"role": "user", "content": f"Question: {query}"}  
+                {"role": m["role"], "content": m["content"]}  
+                for m in st.session_state.messages  
             ],  
-            max_tokens=4096,  
+            max_tokens=800,  
             temperature=0,  
             top_p=1,  
             frequency_penalty=0,  
             presence_penalty=0,  
             stop=None,  
-            stream=False  
-        )  
-  
-        return completion.choices[0].message.content  
-  
-    # Create a file uploader for document uploads  
-    uploaded_file = st.file_uploader("Upload a document", type=["pdf", "txt"])  
-  
-    # Create a chat input field to allow the user to enter a message. This will display  
-    # automatically at the bottom of the page.  
-    if prompt := st.chat_input("What is up?"):  
-        # Store and display the current prompt.  
-        st.session_state.messages.append({"role": "user", "content": prompt})  
-        with st.chat_message("user"):  
-            st.markdown(prompt)  
-  
-        if uploaded_file:  
-            # Handle document-based query  
-            response = handle_document_query(uploaded_file, prompt)  
-        else:  
-            # Generate a response using the general chatbot model  
-            completion = client.chat.completions.create(  
-                model=deployment,  
-                messages=[  
-                    {"role": m["role"], "content": m["content"]}  
-                    for m in st.session_state.messages  
-                ],  
-                max_tokens=800,  
-                temperature=0,  
-                top_p=1,  
-                frequency_penalty=0,  
-                presence_penalty=0,  
-                stop=None,  
-                stream=False,  
-                extra_body={  
-                    "data_sources": [{  
-                        "type": "azure_search",  
-                        "parameters": {  
-                            "endpoint": f"{search_endpoint}",  
-                            "index_name": search_index,  
-                            "semantic_configuration": "default",  
-                            "query_type": "semantic",  
-                            "fields_mapping": {},  
-                            "in_scope": True,  
-                            "role_information": "You are an AI assistant that helps people find information.",  
-                            "filter": None,  
-                            "strictness": 3,  
-                            "top_n_documents": 5,  
-                            "authentication": {  
-                                "type": "api_key",  
-                                "key": f"{search_key}"  
-                            }  
+            stream=False,  
+            extra_body={  
+                "data_sources": [{  
+                    "type": "azure_search",  
+                    "parameters": {  
+                        "endpoint": f"{search_endpoint}",  
+                        "index_name": search_index,  
+                        "semantic_configuration": "default",  
+                        "query_type": "semantic",  
+                        "fields_mapping": {},  
+                        "in_scope": True,  
+                        "role_information": "You are an AI assistant that helps people find information.",  
+                        "filter": None,  
+                        "strictness": 3,  
+                        "top_n_documents": 5,  
+                        "authentication": {  
+                            "type": "api_key",  
+                            "key": f"{search_key}"  
                         }  
-                    }]  
-                }  
-            )  
-            response = completion.choices[0].message.content  
+                    }  
+                }]  
+            }  
+        )  
+        response = completion.choices[0].message.content  
   
-        # Stream the response to the chat using `st.write_stream`, then store it in  
-        # session state.  
-        with st.chat_message("assistant"):  
-            st.markdown(response)  
-        st.session_state.messages.append({"role": "assistant", "content": response})  
-  
-    if st.button("Logout"):  
-        msal_app.get_accounts() and msal_app.remove_account(msal_app.get_accounts()[0])  
-        st.session_state.token = None  
-        st.experimental_rerun()  
-else:  
-    st.write("Please login to interact with the chatbot.")  
+    # Stream the response to the chat using `st.write_stream`, then store it in  
+    # session state.  
+    with st.chat_message("assistant"):  
+        st.markdown(response)  
+    st.session_state.messages.append({"role": "assistant", "content": response})  
