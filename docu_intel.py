@@ -6,8 +6,8 @@ import fitz  # PyMuPDF
 # Set up Azure OpenAI credentials for the general chatbot model  
 endpoint = "https://gpt-4omniwithimages.openai.azure.com/"  
 deployment = "GPT-40-mini"  
-search_endpoint = "https://pptapp8.search.windows.net"  
-search_key = "NbobDVlqcVQMj9Ls9L7Ck23KDB7is5RwHQcL2msZ8jAzSeA6HFAN"  
+search_endpoint = "https://pptapp08.search.windows.net"  
+search_key = "1Hvq9rQMxIoSq8ufhp6xKrSepHb3bIAV4YJsWILDQIAzSeD2ltul"  
 search_index = "new-index-5"  
 api_key = "6e98566acaf24997baa39039b6e6d183"  
   
