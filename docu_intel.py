@@ -8,7 +8,7 @@ endpoint = "https://gpt-4omniwithimages.openai.azure.com/"
 deployment = "GPT-40-mini"  
 search_endpoint = "https://pptapp8.search.windows.net"  
 search_key = "NbobDVlqcVQMj9Ls9L7Ck23KDB7is5RwHQcL2msZ8jAzSeA6HFAN"  
-search_index = "new-index-4"  
+search_index = "new-index-5"  
 api_key = "6e98566acaf24997baa39039b6e6d183"  
   
 # Set up Azure OpenAI credentials for the Summarizer and Q&A model  
