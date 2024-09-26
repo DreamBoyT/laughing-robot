@@ -30,9 +30,9 @@ summarizer_client = AzureOpenAI(
 )  
   
 # Streamlit app interface  
-st.title("⛽ GAIL Limited Chatbot")  
+st.title("🤖 Enterprise Chatbot")  
 st.write(  
-    "An advanced enterprise chatbot tailored for GAIL, Ministry of Petroleum and Natural Gas, utilizing Azure AI services. This chatbot streamlines internal processes, enhances communication, and provides instant, accurate responses on HR policies, IT support, company events, and more. "  
+    "An advanced enterprise chatbot which streamlines internal processes, enhances communication, and provides instant, accurate responses on HR policies, IT support, company events, and more. "  
     "It is secure, scalable, and designed to boost productivity within the organization."   
 )  
   
