@@ -4,12 +4,12 @@ from openai import AzureOpenAI
 import fitz  # PyMuPDF  
   
 # Set up Azure OpenAI credentials for the general chatbot model  
-endpoint = "https://gpt-4omniwithimages.openai.azure.com/"  
-deployment = "GPT4Omni"  
-search_endpoint = "https://pptapp8.search.windows.net"  
-search_key = "Zl3enZy0TKKvrPcGONuaz0O0rPQaDDkXAFIRAf3JbyAzSeDaFTLJ"  
-search_index = "new-index-6"  
-api_key = "6e98566acaf24997baa39039b6e6d183"  
+endpoint = "https://theswedes.openai.azure.com/"  
+deployment = "GPT-4-Omni"  
+search_endpoint = "https://patent-an.search.windows.net"  
+search_key = "duK2E1AIa5eSE5BJUnInYDWC0opYa2QReFFYpXPncXAzSeBK9FAc"  
+search_index = "new-index"  
+api_key = "783973291a7c4a74a1120133309860c0"  
   
 # Set up Azure OpenAI credentials for the Summarizer and Q&A model  
 summarizer_endpoint = "https://theswedes.openai.azure.com/openai/deployments/GPT-4-Omni/chat/completions?api-version=2024-02-15-preview"  
@@ -30,11 +30,7 @@ summarizer_client = AzureOpenAI(
 )  
   
 # Streamlit app interface  
-st.title("🤖 Enterprise Chatbot")  
-st.write(  
-    "An advanced enterprise chatbot which streamlines internal processes, enhances communication, and provides instant, accurate responses on HR policies, IT support, company events, and more. "  
-    "It is secure, scalable, and designed to boost productivity within the organization."   
-)  
+st.title("PDF Q&A")   
   
 # Create a session state variable to store the chat messages. This ensures that the  
 # messages persist across reruns.  
